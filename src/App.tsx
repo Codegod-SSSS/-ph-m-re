@@ -104,41 +104,26 @@ function AppContent() {
             className="relative w-full h-[300px] md:h-[450px] mb-12 rounded-[2rem] overflow-hidden shadow-2xl border border-white/5 group"
           >
             <img 
-              src="https://images.unsplash.com/photo-1549413289-53744318c471?q=80&w=2000&auto=format&fit=crop" 
+              src="/ephemere.png" 
               alt="ÉPHÉMÈRE Banner" 
               className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
               referrerPolicy="no-referrer"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-dark-primary h-full via-dark-primary/40 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-dark-primary/60 via-transparent to-transparent" />
             
-            <div className="absolute inset-0 flex flex-col items-center justify-center p-8">
-              <motion.div 
-                initial={{ width: 0 }}
-                animate={{ width: '100%', maxWidth: '400px' }}
-                transition={{ duration: 1.5, delay: 0.5 }}
-                className="h-px bg-gradient-to-r from-transparent via-white/40 to-transparent mb-8" 
-              />
+            <div className="absolute inset-x-0 bottom-12 flex flex-col items-center justify-center p-8">
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 1, delay: 0.2 }}
                 className="text-center"
               >
-                <h1 className="text-6xl md:text-8xl font-serif italic text-white tracking-[0.25em] font-light leading-none select-none">
-                  ÉPHÉMÈRE
-                </h1>
-                <div className="flex items-center justify-center gap-4 mt-6">
+                <div className="flex items-center justify-center gap-4">
                   <div className="w-8 h-px bg-white/20" />
                   <span className="text-[10px] md:text-xs text-white/40 font-bold uppercase tracking-[0.6em] whitespace-nowrap">GALERIE D'ART NUMÉRIQUE</span>
                   <div className="w-8 h-px bg-white/20" />
                 </div>
               </motion.div>
-              <motion.div 
-                initial={{ width: 0 }}
-                animate={{ width: '100%', maxWidth: '400px' }}
-                transition={{ duration: 1.5, delay: 0.5 }}
-                className="h-px bg-gradient-to-r from-transparent via-white/40 to-transparent mt-8" 
-              />
             </div>
           </motion.div>
 
