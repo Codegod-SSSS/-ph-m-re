@@ -1,0 +1,189 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { LogIn, Loader2, PlusCircle } from 'lucide-react';
+import { Background } from './components/Background';
+import { TopNav } from './components/TopNav';
+import { Sidebar } from './components/Sidebar';
+import { Gallery, Photo } from './components/Gallery';
+import { Lightbox } from './components/Lightbox';
+import { UploadModal } from './components/UploadModal';
+import { LanguageProvider, useTranslation } from './context/LanguageContext';
+import { auth, db } from './lib/firebase';
+import { signInWithPopup, GoogleAuthProvider, onAuthStateChanged, User } from 'firebase/auth';
+import { useGallery } from './hooks/useGallery';
+
+function AppContent() {
+  const { t } = useTranslation();
+  const [user, setUser] = useState<User | null>(null);
+  const [authReady, setAuthReady] = useState(false);
+  const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [selectedAlbum, setSelectedAlbum] = useState<string | null>(null);
+  const [activePhoto, setActivePhoto] = useState<Photo | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  
+  const { photos, loading } = useGallery(null, selectedAlbum === 'favorites' ? 'favorites' : null, searchQuery);
+
+  useEffect(() => {
+    return onAuthStateChanged(auth, (u) => {
+      setUser(u);
+      setAuthReady(true);
+    });
+  }, []);
+
+  const handleLogin = () => {
+    const provider = new GoogleAuthProvider();
+    signInWithPopup(auth, provider);
+  };
+
+  const handlePrev = () => {
+    if (!activePhoto) return;
+    const idx = photos.findIndex(p => p.id === activePhoto.id);
+    if (idx > 0) setActivePhoto(photos[idx - 1]);
+  };
+
+  const handleNext = () => {
+    if (!activePhoto) return;
+    const idx = photos.findIndex(p => p.id === activePhoto.id);
+    if (idx < photos.length - 1) setActivePhoto(photos[idx + 1]);
+  };
+
+  if (!authReady) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-dark-primary">
+        <Loader2 className="w-8 h-8 text-accent-purple animate-spin" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen relative overflow-hidden flex flex-col items-center justify-center p-6 bg-dark-primary">
+        <Background />
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="glass-card p-12 max-w-md w-full text-center space-y-8 relative z-10"
+        >
+          <div className="space-y-4">
+            <h1 className="text-6xl font-serif italic font-light text-white tracking-[0.3em]">ÉPHÉMÈRE</h1>
+            <p className="text-slate-400 font-light uppercase tracking-widest text-xs">Digital Arts Archive</p>
+          </div>
+          
+          <button 
+            onClick={handleLogin}
+            className="w-full h-14 bg-white text-dark-primary font-bold rounded-2xl flex items-center justify-center gap-3 hover:bg-slate-200 transition-all active:scale-95"
+          >
+            <LogIn className="w-5 h-5" />
+            Connect with Google
+          </button>
+          
+          <p className="text-xs text-slate-500 uppercase tracking-widest">Sign in to start your magical collection</p>
+        </motion.div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-dark-primary">
+      <Background />
+      <TopNav onUploadClick={() => setIsUploadOpen(true)} onSearch={setSearchQuery} />
+      
+      <div className="pt-20 lg:pl-64 flex flex-col min-h-screen">
+        <Sidebar selectedAlbum={selectedAlbum} onSelectAlbum={setSelectedAlbum} />
+        
+        <main className="flex-1 p-6 md:p-12">
+          {/* Hero Banner Section */}
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="relative w-full h-[300px] md:h-[450px] mb-12 rounded-[2rem] overflow-hidden shadow-2xl border border-white/5 group"
+          >
+            <img 
+              src="https://images.unsplash.com/photo-1549413289-53744318c471?q=80&w=2000&auto=format&fit=crop" 
+              alt="ÉPHÉMÈRE Banner" 
+              className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
+              referrerPolicy="no-referrer"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-dark-primary h-full via-dark-primary/40 to-transparent" />
+            
+            <div className="absolute inset-0 flex flex-col items-center justify-center p-8">
+              <motion.div 
+                initial={{ width: 0 }}
+                animate={{ width: '100%', maxWidth: '400px' }}
+                transition={{ duration: 1.5, delay: 0.5 }}
+                className="h-px bg-gradient-to-r from-transparent via-white/40 to-transparent mb-8" 
+              />
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 1, delay: 0.2 }}
+                className="text-center"
+              >
+                <h1 className="text-6xl md:text-8xl font-serif italic text-white tracking-[0.25em] font-light leading-none select-none">
+                  ÉPHÉMÈRE
+                </h1>
+                <div className="flex items-center justify-center gap-4 mt-6">
+                  <div className="w-8 h-px bg-white/20" />
+                  <span className="text-[10px] md:text-xs text-white/40 font-bold uppercase tracking-[0.6em] whitespace-nowrap">GALERIE D'ART NUMÉRIQUE</span>
+                  <div className="w-8 h-px bg-white/20" />
+                </div>
+              </motion.div>
+              <motion.div 
+                initial={{ width: 0 }}
+                animate={{ width: '100%', maxWidth: '400px' }}
+                transition={{ duration: 1.5, delay: 0.5 }}
+                className="h-px bg-gradient-to-r from-transparent via-white/40 to-transparent mt-8" 
+              />
+            </div>
+          </motion.div>
+
+          <header className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
+            <div className="space-y-1">
+              <h1 className="text-4xl md:text-5xl font-light italic serif text-white">
+                {selectedAlbum === 'favorites' ? t.favorites : (selectedAlbum === null ? "Vos Moments Enchantés" : selectedAlbum)}
+              </h1>
+              <p className="text-white/40 text-sm font-medium">Capturez la magie du temps</p>
+            </div>
+            
+            <div className="flex gap-2">
+              <button className="w-10 h-10 flex items-center justify-center rounded-full border border-white/10 bg-white/5 hover:bg-white/10 text-white transition-colors">
+                <PlusCircle className="w-4 h-4" />
+              </button>
+            </div>
+          </header>
+
+          {loading ? (
+            <div className="flex items-center justify-center min-h-[40vh]">
+              <Loader2 className="w-8 h-8 text-accent-purple animate-spin" />
+            </div>
+          ) : (
+            <Gallery photos={photos} onPhotoClick={setActivePhoto} />
+          )}
+        </main>
+      </div>
+
+      <Lightbox 
+        photo={activePhoto} 
+        onClose={() => setActivePhoto(null)} 
+        onPrev={handlePrev}
+        onNext={handleNext}
+      />
+      
+      <UploadModal isOpen={isUploadOpen} onClose={() => setIsUploadOpen(false)} />
+    </div>
+  );
+}
+
+export default function App() {
+  return (
+    <LanguageProvider>
+      <AppContent />
+    </LanguageProvider>
+  );
+}
+

@@ -1,0 +1,100 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,900;1,900&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Playfair Display", serif;
+  
+  --color-dark-primary: #050816;
+  --color-dark-secondary: #0F172A;
+  --color-accent-purple: #7C3AED;
+  --color-accent-blue: #38BDF8;
+}
+
+@layer base {
+  body {
+    @apply bg-dark-primary text-slate-200 overflow-x-hidden antialiased;
+  }
+}
+
+@layer components {
+  .glass {
+    background: rgba(5, 8, 22, 0.4);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+  }
+  
+  .glass-card {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    @apply rounded-2xl shadow-xl transition-all duration-300;
+  }
+
+  .atmosphere-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    background-color: #050816;
+    overflow: hidden;
+  }
+
+  .grid-pattern {
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+    background-size: 50px 50px;
+    opacity: 0.5;
+  }
+
+  /* Starry sky */
+  .stars {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background-image: 
+      radial-gradient(1px 1px at 25% 10%, #fff 50%, transparent 50%),
+      radial-gradient(1.5px 1.5px at 50% 25%, #fff 50%, transparent 50%),
+      radial-gradient(1px 1px at 75% 40%, #fff 50%, transparent 50%),
+      radial-gradient(1.5px 1.5px at 20% 60%, #fff 50%, transparent 50%),
+      radial-gradient(1px 1px at 40% 75%, #fff 50%, transparent 50%),
+      radial-gradient(1.5px 1.5px at 60% 85%, #fff 50%, transparent 50%),
+      radial-gradient(1px 1px at 85% 95%, #fff 50%, transparent 50%),
+      radial-gradient(1px 1px at 15% 35%, #fff 50%, transparent 50%);
+    background-size: 550px 550px;
+    opacity: 0.15;
+    animation: stars-twinkle 4s infinite linear;
+  }
+
+  @keyframes stars-twinkle {
+    0%, 100% { opacity: 0.1; }
+    50% { opacity: 0.3; }
+  }
+
+  /* Fog effect */
+  .fog {
+    position: absolute;
+    width: 200%;
+    height: 100%;
+    background: radial-gradient(circle at 50% 50%, rgba(124, 58, 237, 0.03) 0%, transparent 50%);
+    filter: blur(100px);
+    animation: fog-move 60s infinite linear;
+  }
+
+  @keyframes fog-move {
+    0% { transform: translateX(-50%); }
+    100% { transform: translateX(0); }
+  }
+
+  .btn-primary {
+    @apply px-6 py-2.5 bg-white text-dark-primary hover:opacity-90 rounded-full transition-all font-semibold active:scale-95 shadow-lg shadow-white/10;
+  }
+
+  .sidebar-item-active {
+    @apply bg-accent-purple/10 text-accent-purple border-accent-purple/20;
+  }
+}
+

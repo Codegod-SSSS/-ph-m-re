@@ -1,0 +1,47 @@
+{
+  "entities": {
+    "Album": {
+      "title": "Album",
+      "description": "A collection of photos.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "description": "The title of the album." },
+        "description": { "type": "string", "description": "A short description." },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "ownerId": { "type": "string" },
+        "coverImageId": { "type": "string" }
+      },
+      "required": ["title", "ownerId", "createdAt"]
+    },
+    "Photo": {
+      "title": "Photo",
+      "description": "An image with metadata and frame settings.",
+      "type": "object",
+      "properties": {
+        "url": { "type": "string" },
+        "thumbnailUrl": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "albumId": { "type": "string" },
+        "userId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "frameStyle": { "type": "string", "enum": ["none", "minimal", "black", "gold", "neon", "vintage", "polaroid", "glass"] },
+        "isFavorite": { "type": "boolean" },
+        "width": { "type": "number" },
+        "height": { "type": "number" }
+      },
+      "required": ["url", "userId", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/albums/{albumId}": {
+      "schema": "Album",
+      "description": "User created albums."
+    },
+    "/photos/{photoId}": {
+      "schema": "Photo",
+      "description": "Uploaded photos."
+    }
+  }
+}
