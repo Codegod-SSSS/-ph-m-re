@@ -2,23 +2,10 @@ import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Upload, Image as ImageIcon, FileText, CheckCircle2, Loader2 } from 'lucide-react';
 import { useTranslation } from '../context/LanguageContext';
-import { db, storage, auth, handleFirestoreError, OperationType } from '../lib/firebase';
-import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { db, auth, handleFirestoreError, OperationType } from '../lib/firebase';
+import { collection, addDoc, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
 import { generateImageTags } from '../services/aiService';
-
-const fileToBase64 = (file: File): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => {
-      const base64String = reader.result?.toString().split(',')[1];
-      if (base64String) resolve(base64String);
-      else reject('Failed to convert file to base64');
-    };
-    reader.onerror = error => reject(error);
-  });
-};
+import { compressImage } from '../lib/imageCompression';
 
 export function UploadModal({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) {
   const { t } = useTranslation();
@@ -29,66 +16,87 @@ export function UploadModal({ isOpen, onClose }: { isOpen: boolean, onClose: () 
 
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      setFiles(Array.from(e.target.files));
+      const selectedFiles = Array.from(e.target.files).filter(f => f.size <= 4 * 1024 * 1024);
+      if (selectedFiles.length < e.target.files.length) {
+        alert("Some files were skipped because they exceed 4MB.");
+      }
+      setFiles(selectedFiles);
     }
+  };
+
+  const getOrCreateDefaultAlbum = async () => {
+    if (!auth.currentUser) return null;
+    const q = query(collection(db, 'albums'), where('ownerId', '==', auth.currentUser.uid));
+    const snapshot = await getDocs(q);
+    if (!snapshot.empty) return snapshot.docs[0].id;
+
+    const docRef = await addDoc(collection(db, 'albums'), {
+      title: 'Mon Archive',
+      description: 'Album par défaut',
+      ownerId: auth.currentUser.uid,
+      createdAt: serverTimestamp()
+    });
+    return docRef.id;
   };
 
   const handleUpload = async () => {
     if (!auth.currentUser || files.length === 0) return;
     setUploading(true);
 
-    const uploadPromises = files.map(async (file) => {
-      const storageRef = ref(storage, `photos/${auth.currentUser?.uid}/${Date.now()}-${file.name}`);
-      const uploadTask = uploadBytesResumable(storageRef, file);
-
-      return new Promise((resolve, reject) => {
-        uploadTask.on(
-          'state_changed',
-          (snapshot) => {
-            const p = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-            setProgress(prev => ({ ...prev, [file.name]: p }));
-          },
-          (error) => reject(error),
-          async () => {
-            const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-            
-            // Generate AI tags
-            let tags: string[] = [];
-            try {
-              const base64 = await fileToBase64(file);
-              tags = await generateImageTags(base64, file.type);
-            } catch (err) {
-              console.error("AI Tagging failed for", file.name, err);
-            }
-
-            try {
-              await addDoc(collection(db, 'photos'), {
-                url: downloadURL,
-                userId: auth.currentUser?.uid,
-                createdAt: serverTimestamp(),
-                title: file.name.split('.')[0],
-                description: '',
-                frameStyle: 'none',
-                isFavorite: false,
-                tags: tags
-              });
-              resolve(downloadURL);
-            } catch (error) {
-              handleFirestoreError(error, OperationType.WRITE, 'photos');
-              reject(error);
-            }
-          }
-        );
-      });
-    });
-
     try {
+      const albumId = await getOrCreateDefaultAlbum();
+      if (!albumId) throw new Error("Could not find or create an album.");
+
+      const uploadPromises = files.map(async (file) => {
+        setProgress(prev => ({ ...prev, [file.name]: 10 }));
+        
+        // 1. Compression
+        let url: string;
+        try {
+          url = await compressImage(file);
+          setProgress(prev => ({ ...prev, [file.name]: 50 }));
+        } catch (err) {
+          console.error("Compression failed", err);
+          throw err;
+        }
+
+        // 2. AI Tags
+        let tags: string[] = [];
+        try {
+          tags = await generateImageTags(url.split(',')[1], file.type);
+        } catch (err) {
+          console.error("AI Tagging failed", err);
+        }
+        setProgress(prev => ({ ...prev, [file.name]: 80 }));
+
+        // 3. Firestore Add
+        try {
+          await addDoc(collection(db, 'photos'), {
+            url,
+            userId: auth.currentUser?.uid,
+            albumId,
+            createdAt: serverTimestamp(),
+            title: file.name.split('.')[0],
+            description: '',
+            frameStyle: 'none',
+            isFavorite: false,
+            tags: tags
+          });
+          setProgress(prev => ({ ...prev, [file.name]: 100 }));
+        } catch (error) {
+          handleFirestoreError(error, OperationType.CREATE, 'photos');
+        }
+      });
+
       await Promise.all(uploadPromises);
-      onClose();
-      setFiles([]);
-      setProgress({});
+      setTimeout(() => {
+        onClose();
+        setFiles([]);
+        setProgress({});
+      }, 500);
     } catch (error) {
       console.error(error);
+      alert("Upload failed. Storage might be full or permissions missing.");
     } finally {
       setUploading(false);
     }

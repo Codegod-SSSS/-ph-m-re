@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db, auth, handleFirestoreError, OperationType } from '../lib/firebase';
 import { Photo } from '../components/Gallery';
 
@@ -16,8 +16,7 @@ export function useGallery(albumId: string | null = null, filter: string | null 
 
     let q = query(
       collection(db, 'photos'),
-      where('userId', '==', auth.currentUser.uid),
-      orderBy('createdAt', 'desc')
+      where('userId', '==', auth.currentUser.uid)
     );
 
     if (albumId) {
@@ -33,6 +32,13 @@ export function useGallery(albumId: string | null = null, filter: string | null 
         id: doc.id,
         ...doc.data()
       })) as Photo[];
+
+      // In-memory sorting by createdAt desc
+      docs.sort((a, b) => {
+        const timeA = (a.createdAt as any)?.toMillis?.() || 0;
+        const timeB = (b.createdAt as any)?.toMillis?.() || 0;
+        return timeB - timeA;
+      });
 
       if (searchQuery) {
         const lowerQuery = searchQuery.toLowerCase();

@@ -15,21 +15,18 @@
     },
     "Photo": {
       "title": "Photo",
-      "description": "An image with metadata and frame settings.",
+      "description": "An image stored as base64 with metadata.",
       "type": "object",
       "properties": {
-        "url": { "type": "string" },
-        "thumbnailUrl": { "type": "string" },
+        "url": { "type": "string", "description": "Base64 encoded image data." },
         "title": { "type": "string" },
         "description": { "type": "string" },
         "albumId": { "type": "string" },
         "userId": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" },
         "tags": { "type": "array", "items": { "type": "string" } },
-        "frameStyle": { "type": "string", "enum": ["none", "minimal", "black", "gold", "neon", "vintage", "polaroid", "glass"] },
-        "isFavorite": { "type": "boolean" },
-        "width": { "type": "number" },
-        "height": { "type": "number" }
+        "frameStyle": { "type": "string" },
+        "isFavorite": { "type": "boolean" }
       },
       "required": ["url", "userId", "createdAt"]
     }

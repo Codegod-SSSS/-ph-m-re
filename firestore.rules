@@ -6,56 +6,29 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
-    // --- Helper Functions ---
-    function isSignedIn() { return request.auth != null; }
-    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
-    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
-    function incoming() { return request.resource.data; }
-    function existing() { return resource.data; }
-
-    function isValidAlbum(data) {
-      return data.keys().hasAll(['title', 'ownerId', 'createdAt']) &&
-             data.keys().size() <= 5 &&
-             data.title is string && data.title.size() <= 100 &&
-             data.ownerId == request.auth.uid &&
-             data.createdAt == request.time;
+    function isSignedIn() {
+      return request.auth != null;
     }
 
-    function isValidPhoto(data) {
-      return data.keys().hasAll(['url', 'userId', 'createdAt']) &&
-             data.keys().size() <= 12 &&
-             data.url is string && data.url.size() <= 1000 &&
-             data.userId == request.auth.uid &&
-             data.createdAt == request.time &&
-             (data.get('frameStyle', 'none') in ['none', 'minimal', 'black', 'gold', 'neon', 'vintage', 'polaroid', 'glass']);
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
     }
 
-    // --- Collections ---
+    function incoming() {
+      return request.resource.data;
+    }
 
     match /albums/{albumId} {
-      allow get: if isSignedIn() && isOwner(existing().ownerId);
-      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
-      
-      allow create: if isSignedIn() && isValidId(albumId) && isValidAlbum(incoming());
-      
-      allow update: if isSignedIn() && isOwner(existing().ownerId) && isValidAlbum(incoming()) && (
-        incoming().diff(existing()).affectedKeys().hasOnly(['title', 'description', 'coverImageId'])
-      );
-      
-      allow delete: if isSignedIn() && isOwner(existing().ownerId);
+      allow create: if isSignedIn() && isOwner(incoming().ownerId);
+      allow read, update, delete: if isSignedIn() && isOwner(resource.data.ownerId);
     }
 
     match /photos/{photoId} {
-      allow get: if isSignedIn() && isOwner(existing().userId);
-      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && 
+                    isOwner(incoming().userId) && 
+                    get(/databases/$(database)/documents/albums/$(incoming().albumId)).data.ownerId == request.auth.uid;
       
-      allow create: if isSignedIn() && isValidId(photoId) && isValidPhoto(incoming());
-      
-      allow update: if isSignedIn() && isOwner(existing().userId) && isValidPhoto(incoming()) && (
-        incoming().diff(existing()).affectedKeys().hasOnly(['title', 'description', 'albumId', 'frameStyle', 'isFavorite', 'tags'])
-      );
-      
-      allow delete: if isSignedIn() && isOwner(existing().userId);
+      allow read, update, delete: if isSignedIn() && isOwner(resource.data.userId);
     }
   }
 }

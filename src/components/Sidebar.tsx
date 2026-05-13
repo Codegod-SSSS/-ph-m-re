@@ -1,9 +1,11 @@
 import { LayoutGrid, Heart, Clock, Trash2, FolderOpen, ChevronRight, Plus } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useTranslation } from '../context/LanguageContext';
+import { useAlbums } from '../hooks/useAlbums';
 
 export function Sidebar({ selectedAlbum, onSelectAlbum }: { selectedAlbum: string | null, onSelectAlbum: (id: string | null) => void }) {
   const { t } = useTranslation();
+  const { albums, loading } = useAlbums();
 
   const navItems = [
     { id: 'all', label: t.albums, icon: LayoutGrid },
@@ -41,19 +43,25 @@ export function Sidebar({ selectedAlbum, onSelectAlbum }: { selectedAlbum: strin
           </div>
           
           <div className="space-y-1">
-            {/* Mock Albums for UI development */}
-            {['Voyage 2024', 'Famille', 'Nature Noir', 'Urbain'].map((album) => (
-              <button
-                key={album}
-                className="w-full flex items-center justify-between px-3 py-2 text-slate-400 hover:text-white hover:bg-white/5 rounded-lg transition-all group"
-              >
-                <div className="flex items-center gap-3">
-                  <FolderOpen className="w-4 h-4 opacity-40" />
-                  <span className="text-sm font-medium">{album}</span>
-                </div>
-                <ChevronRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
-              </button>
-            ))}
+            {loading ? (
+              <div className="px-4 py-2">
+                <div className="h-4 w-24 bg-white/5 animate-pulse rounded" />
+              </div>
+            ) : (
+              albums.map((album) => (
+                <button
+                  key={album.id}
+                  onClick={() => onSelectAlbum(album.id)}
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-all group ${selectedAlbum === album.id ? 'text-white bg-white/5' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
+                >
+                  <div className="flex items-center gap-3">
+                    <FolderOpen className="w-4 h-4 opacity-40" />
+                    <span className="text-sm font-medium">{album.title}</span>
+                  </div>
+                  <ChevronRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </button>
+              ))
+            )}
           </div>
         </div>
       </div>

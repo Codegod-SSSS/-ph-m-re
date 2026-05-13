@@ -16,17 +16,31 @@ import { LanguageProvider, useTranslation } from './context/LanguageContext';
 import { auth, db } from './lib/firebase';
 import { signInWithPopup, GoogleAuthProvider, onAuthStateChanged, User } from 'firebase/auth';
 import { useGallery } from './hooks/useGallery';
+import { useAlbums } from './hooks/useAlbums';
 
 function AppContent() {
   const { t } = useTranslation();
   const [user, setUser] = useState<User | null>(null);
   const [authReady, setAuthReady] = useState(false);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const { albums, loading: albumsLoading } = useAlbums();
   const [selectedAlbum, setSelectedAlbum] = useState<string | null>(null);
   const [activePhoto, setActivePhoto] = useState<Photo | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   
-  const { photos, loading } = useGallery(null, selectedAlbum === 'favorites' ? 'favorites' : null, searchQuery);
+  const { photos, loading: photosLoading } = useGallery(
+    selectedAlbum && selectedAlbum !== 'favorites' ? selectedAlbum : null, 
+    selectedAlbum === 'favorites' ? 'favorites' : null, 
+    searchQuery
+  );
+
+  useEffect(() => {
+    if (!selectedAlbum && albums.length > 0) {
+      setSelectedAlbum(albums[0].id);
+    }
+  }, [albums, selectedAlbum]);
+
+  const loading = albumsLoading || photosLoading;
 
   useEffect(() => {
     return onAuthStateChanged(auth, (u) => {
