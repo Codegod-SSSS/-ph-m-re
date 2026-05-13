@@ -11,16 +11,48 @@ export function UploadModal({ isOpen, onClose }: { isOpen: boolean, onClose: () 
   const { t } = useTranslation();
   const [files, setFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const [progress, setProgress] = useState<Record<string, number>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const handleFiles = (selectedFiles: File[]) => {
+    const validFiles = selectedFiles.filter(f => f.size <= 4 * 1024 * 1024);
+    if (validFiles.length < selectedFiles.length) {
+      alert("Some files were skipped because they exceed 4MB.");
+    }
+    setFiles(prev => [...prev, ...validFiles]);
+  };
+
+  const removeFile = (fileName: string) => {
+    setFiles(prev => prev.filter(f => f.name !== fileName));
+    setProgress(prev => {
+      const newProgress = { ...prev };
+      delete newProgress[fileName];
+      return newProgress;
+    });
+  };
+
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      const selectedFiles = Array.from(e.target.files).filter(f => f.size <= 4 * 1024 * 1024);
-      if (selectedFiles.length < e.target.files.length) {
-        alert("Some files were skipped because they exceed 4MB.");
-      }
-      setFiles(selectedFiles);
+      handleFiles(Array.from(e.target.files));
+    }
+  };
+
+  const onDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const onDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const onDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (e.dataTransfer.files) {
+      handleFiles(Array.from(e.dataTransfer.files));
     }
   };
 
@@ -125,10 +157,21 @@ export function UploadModal({ isOpen, onClose }: { isOpen: boolean, onClose: () 
 
             <div 
               onClick={() => fileInputRef.current?.click()}
-              className="border-2 border-dashed border-white/10 rounded-2xl p-10 flex flex-col items-center justify-center gap-4 hover:border-accent-purple/50 hover:bg-accent-purple/5 transition-all cursor-pointer group"
+              onDragOver={onDragOver}
+              onDragLeave={onDragLeave}
+              onDrop={onDrop}
+              className={`border-2 border-dashed rounded-2xl p-10 flex flex-col items-center justify-center gap-4 transition-all cursor-pointer group ${
+                isDragging 
+                  ? 'border-accent-purple bg-accent-purple/10 scale-102' 
+                  : 'border-white/10 hover:border-accent-purple/50 hover:bg-accent-purple/5'
+              }`}
             >
-              <div className="p-4 bg-white/5 rounded-full group-hover:bg-accent-purple/20 transition-colors">
-                <Upload className="w-8 h-8 text-accent-purple" />
+              <div className={`p-4 rounded-full transition-colors ${
+                isDragging ? 'bg-accent-purple/20' : 'bg-white/5 group-hover:bg-accent-purple/20'
+              }`}>
+                <Upload className={`w-8 h-8 transition-transform duration-300 ${
+                  isDragging ? 'scale-110 text-accent-purple' : 'text-accent-purple group-hover:scale-110'
+                }`} />
               </div>
               <div className="text-center">
                 <p className="text-white font-medium">{t.dragDrop}</p>
@@ -161,8 +204,21 @@ export function UploadModal({ isOpen, onClose }: { isOpen: boolean, onClose: () 
                         />
                       </div>
                     </div>
-                    {progress[file.name] === 100 && (
+                    {progress[file.name] === 100 ? (
                       <CheckCircle2 className="w-4 h-4 text-green-500" />
+                    ) : (
+                      !uploading && (
+                        <button 
+                          onClick={() => removeFile(file.name)}
+                          className="p-1.5 hover:bg-red-500/20 text-slate-400 hover:text-red-500 rounded-md transition-all group/remove relative"
+                          title="Remove file"
+                        >
+                          <X className="w-4 h-4" />
+                          <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-dark-primary border border-white/10 text-[10px] text-white rounded opacity-0 group-hover/remove:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                            Remove
+                          </span>
+                        </button>
+                      )
                     )}
                   </div>
                 ))}

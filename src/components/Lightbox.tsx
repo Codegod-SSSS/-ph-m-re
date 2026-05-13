@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, ChevronLeft, ChevronRight, Download, Share2, Heart, Edit3, Trash2, Frame, Play, Pause, FastForward, Settings2 } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Download, Share2, Heart, Edit3, Trash2, Frame, Play, Pause, FastForward, Settings2, Check, AlertCircle } from 'lucide-react';
 import { Photo } from './Gallery';
 import { useTranslation } from '../context/LanguageContext';
 import { toggleFavorite, deletePhoto, updatePhotoMetadata } from '../services/photoService';
+import { ConfirmModal } from './ConfirmModal';
 
 const frameOptions = ['none', 'minimal', 'black', 'gold', 'neon', 'vintage', 'polaroid', 'glass'];
 const transitionOptions = ['fade', 'slide', 'zoom'];
@@ -21,6 +22,18 @@ export function Lightbox({ photo, onClose, onPrev, onNext }: {
   const [transitionType, setTransitionType] = useState('fade');
   const [showSlideshowControls, setShowSlideshowControls] = useState(false);
   const slideshowTimerRef = useRef<NodeJS.Timeout | null>(null);
+  
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState('');
+  const [editDesc, setEditDesc] = useState('');
+
+  useEffect(() => {
+    if (photo) {
+      setEditTitle(photo.title);
+      setEditDesc(photo.description || '');
+    }
+  }, [photo]);
 
   useEffect(() => {
     if (isSlideshowActive && photo) {
@@ -39,14 +52,33 @@ export function Lightbox({ photo, onClose, onPrev, onNext }: {
 
   const handleFavorite = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    await toggleFavorite(photo.id, !!photo.isFavorite);
+    try {
+      await toggleFavorite(photo.id, !!photo.isFavorite);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
-  const handleDelete = async () => {
-    if (window.confirm(t.deleteConfirm)) {
+  const handleEditSave = async () => {
+    try {
+      await updatePhotoMetadata(photo.id, { title: editTitle, description: editDesc });
+      setIsEditing(false);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const confirmDelete = async () => {
+    try {
       await deletePhoto(photo.id);
       onClose();
+    } catch (err) {
+      console.error(err);
     }
+  };
+
+  const handleDeleteClick = () => {
+    setIsDeleting(true);
   };
 
   const handleFrameSelect = async (style: string) => {
@@ -141,13 +173,30 @@ export function Lightbox({ photo, onClose, onPrev, onNext }: {
             className="w-full md:w-80 glass-card p-6 flex flex-col gap-6 relative overflow-visible"
           >
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-white">{photo.title}</h2>
-              <button onClick={onClose} className="p-1 hover:bg-white/10 rounded-md text-slate-400">
+              {isEditing ? (
+                <input 
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  className="bg-white/5 border border-white/10 rounded px-2 py-1 text-white text-lg font-semibold w-full focus:outline-none focus:border-accent-purple"
+                />
+              ) : (
+                <h2 className="text-xl font-semibold text-white">{photo.title}</h2>
+              )}
+              <button onClick={onClose} className="p-1 hover:bg-white/10 rounded-md text-slate-400 ml-2">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <p className="text-slate-400 text-sm">{photo.description || 'No description provided.'}</p>
+            {isEditing ? (
+              <textarea 
+                value={editDesc}
+                onChange={(e) => setEditDesc(e.target.value)}
+                className="bg-white/5 border border-white/10 rounded px-2 py-1 text-white text-sm w-full h-24 focus:outline-none focus:border-accent-purple resize-none"
+                placeholder="Photo description..."
+              />
+            ) : (
+              <p className="text-slate-400 text-sm">{photo.description || 'No description provided.'}</p>
+            )}
 
             {/* Tags Display */}
             {photo.tags && photo.tags.length > 0 && (
@@ -272,24 +321,60 @@ export function Lightbox({ photo, onClose, onPrev, onNext }: {
                 <div className="flex items-center gap-2">
                   <button 
                     onClick={handleFavorite}
-                    className="p-2 hover:bg-white/10 rounded-lg text-slate-400 hover:text-accent-purple transition-all"
+                    className="p-2 hover:bg-white/10 rounded-lg text-slate-400 hover:text-accent-purple transition-all group relative"
+                    title="Add to favorites"
                   >
                     <Heart className={`w-5 h-5 ${photo.isFavorite ? 'fill-accent-purple text-accent-purple' : ''}`} />
+                    <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-dark-primary border border-white/10 text-[10px] text-white rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                      Favorite
+                    </span>
                   </button>
-                  <button className="p-2 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white transition-all">
-                    <Edit3 className="w-5 h-5" />
-                  </button>
+                  {isEditing ? (
+                    <button 
+                      onClick={handleEditSave}
+                      className="p-2 bg-accent-purple text-white rounded-lg transition-all"
+                      title="Save changes"
+                    >
+                      <Check className="w-5 h-5" />
+                    </button>
+                  ) : (
+                    <button 
+                      onClick={() => setIsEditing(true)}
+                      className="p-2 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white transition-all group relative"
+                      title="Edit details"
+                    >
+                      <Edit3 className="w-5 h-5" />
+                      <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-dark-primary border border-white/10 text-[10px] text-white rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                        Edit
+                      </span>
+                    </button>
+                  )}
                 </div>
                 <button 
-                  onClick={handleDelete}
-                  className="p-2 hover:bg-red-500/10 rounded-lg text-slate-500 hover:text-red-500 transition-all"
+                  onClick={handleDeleteClick}
+                  className="p-2 hover:bg-red-500/10 rounded-lg text-slate-500 hover:text-red-500 transition-all group relative"
+                  title="Delete photo"
                 >
                   <Trash2 className="w-5 h-5" />
+                  <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-dark-primary border border-white/10 text-[10px] text-white rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                    Delete
+                  </span>
                 </button>
               </div>
             </div>
           </motion.div>
         </div>
+
+        <ConfirmModal 
+          isOpen={isDeleting}
+          onClose={() => setIsDeleting(false)}
+          onConfirm={confirmDelete}
+          title="Delete Photo"
+          message="Are you sure you want to permanently delete this masterpiece? This action cannot be undone."
+          confirmText="Delete"
+          cancelText="Cancel"
+          variant="danger"
+        />
       </motion.div>
     </AnimatePresence>
   );

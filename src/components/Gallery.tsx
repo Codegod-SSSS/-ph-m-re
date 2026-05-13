@@ -6,6 +6,8 @@ export interface Photo {
   id: string;
   url: string;
   title: string;
+  userId: string;
+  createdAt: any;
   description?: string;
   isFavorite?: boolean;
   frameStyle?: string;

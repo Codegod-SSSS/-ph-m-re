@@ -30,5 +30,10 @@ service cloud.firestore {
       
       allow read, update, delete: if isSignedIn() && isOwner(resource.data.userId);
     }
+
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && isOwner(userId);
+    }
   }
 }

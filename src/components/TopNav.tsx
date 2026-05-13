@@ -3,11 +3,15 @@ import { motion, AnimatePresence } from 'motion/react';
 import React, { useState } from 'react';
 import { useTranslation } from '../context/LanguageContext';
 import { Language } from '../lib/translations';
+import { AccountSettingsModal } from './AccountSettingsModal';
+import { auth } from '../lib/firebase';
 
 export function TopNav({ onUploadClick, onSearch }: { onUploadClick: () => void, onSearch: (query: string) => void }) {
   const { t, language, setLanguage } = useTranslation();
   const [isLangOpen, setIsLangOpen] = useState(false);
+  const [isAccountOpen, setIsAccountOpen] = useState(false);
   const [searchValue, setSearchValue] = useState('');
+  const user = auth.currentUser;
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
@@ -54,13 +58,16 @@ export function TopNav({ onUploadClick, onSearch }: { onUploadClick: () => void,
       <div className="flex items-center gap-3">
         <button 
           onClick={onUploadClick}
-          className="btn-primary flex items-center gap-2 group"
+          className="btn-primary flex items-center gap-2 group relative"
         >
           <Upload className="w-4 h-4 group-hover:-translate-y-0.5 transition-transform" />
           <span>{t.upload}</span>
+          <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-dark-primary border border-white/10 text-[10px] text-white rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+            {t.uploadPhotos}
+          </span>
         </button>
 
-        <div className="relative">
+        <div className="relative group/lang">
           <button 
             onClick={() => setIsLangOpen(!isLangOpen)}
             className="flex items-center gap-2 px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg cursor-pointer hover:bg-white/10 transition-colors"
@@ -68,6 +75,9 @@ export function TopNav({ onUploadClick, onSearch }: { onUploadClick: () => void,
             <span className="text-xs font-bold text-white">{language.toUpperCase()}</span>
             <Globe className="w-3 h-3 text-white/60" />
           </button>
+          <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-dark-primary border border-white/10 text-[10px] text-white rounded opacity-0 group-hover/lang:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+            Language
+          </span>
 
           <AnimatePresence>
             {isLangOpen && (
@@ -98,10 +108,23 @@ export function TopNav({ onUploadClick, onSearch }: { onUploadClick: () => void,
           </AnimatePresence>
         </div>
 
-        <button className="p-2 hover:bg-white/10 rounded-lg transition-colors text-slate-400 hover:text-white">
-          <User className="w-5 h-5" />
+        <button 
+          onClick={() => setIsAccountOpen(true)}
+          className="p-1 hover:bg-white/10 rounded-lg transition-colors text-slate-400 hover:text-white group relative"
+          id="account-settings-btn"
+        >
+          {user?.photoURL ? (
+             <img src={user.photoURL} alt="User" className="w-8 h-8 rounded-full object-cover border border-white/10" />
+          ) : (
+            <User className="w-6 h-6 p-1" />
+          )}
+          <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-dark-primary border border-white/10 text-[10px] text-white rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+            Account
+          </span>
         </button>
       </div>
+
+      <AccountSettingsModal isOpen={isAccountOpen} onClose={() => setIsAccountOpen(false)} />
     </nav>
   );
 }

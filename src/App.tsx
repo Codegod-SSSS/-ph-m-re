@@ -102,6 +102,9 @@ function AppContent() {
     );
   }
 
+  // Derive the active photo from the photos array to ensure it's always up-to-date
+  const activePhotoData = activePhoto ? photos.find(p => p.id === activePhoto.id) || activePhoto : null;
+
   return (
     <div className="min-h-screen bg-dark-primary">
       <Background />
@@ -144,14 +147,19 @@ function AppContent() {
           <header className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div className="space-y-1">
               <h1 className="text-4xl md:text-5xl font-light italic serif text-white">
-                {selectedAlbum === 'favorites' ? t.favorites : (selectedAlbum === null ? "Vos Moments Enchantés" : selectedAlbum)}
+                {selectedAlbum === 'favorites' ? t.favorites : (selectedAlbum === null ? (user?.displayName ? `Les Archives de ${user.displayName.split(' ')[0]}` : "Vos Moments Enchantés") : (albums.find(a => a.id === selectedAlbum)?.title || selectedAlbum))}
               </h1>
               <p className="text-white/40 text-sm font-medium">Capturez la magie du temps</p>
             </div>
             
             <div className="flex gap-2">
-              <button className="w-10 h-10 flex items-center justify-center rounded-full border border-white/10 bg-white/5 hover:bg-white/10 text-white transition-colors">
-                <PlusCircle className="w-4 h-4" />
+              <button 
+                onClick={() => setIsUploadOpen(true)}
+                className="flex items-center gap-2 px-6 py-2.5 rounded-full bg-accent-purple text-white font-medium shadow-lg shadow-purple-500/20 hover:bg-accent-purple/90 active:scale-95 transition-all text-sm group"
+                id="header-upload-btn"
+              >
+                <PlusCircle className="w-4 h-4 group-hover:rotate-90 transition-transform duration-300" />
+                <span>Upload Masterpiece</span>
               </button>
             </div>
           </header>
@@ -167,7 +175,7 @@ function AppContent() {
       </div>
 
       <Lightbox 
-        photo={activePhoto} 
+        photo={activePhotoData} 
         onClose={() => setActivePhoto(null)} 
         onPrev={handlePrev}
         onNext={handleNext}
