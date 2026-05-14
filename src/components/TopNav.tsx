@@ -110,16 +110,18 @@ export function TopNav({ onUploadClick, onSearch }: { onUploadClick: () => void,
 
         <button 
           onClick={() => setIsAccountOpen(true)}
-          className="p-1 hover:bg-white/10 rounded-lg transition-colors text-slate-400 hover:text-white group relative"
+          className="relative group p-0.5 rounded-full bg-gradient-to-tr from-accent-purple to-accent-blue p-[1px] hover:scale-105 active:scale-95 transition-all shadow-lg overflow-hidden flex items-center justify-center h-10 w-10"
           id="account-settings-btn"
         >
-          {user?.photoURL ? (
-             <img src={user.photoURL} alt="User" className="w-8 h-8 rounded-full object-cover border border-white/10" />
-          ) : (
-            <User className="w-6 h-6 p-1" />
-          )}
-          <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-dark-primary border border-white/10 text-[10px] text-white rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-            Account
+          <div className="w-full h-full rounded-full bg-dark-primary flex items-center justify-center overflow-hidden">
+            {user?.photoURL ? (
+               <img src={user.photoURL} alt="User" className="w-full h-full object-cover" />
+            ) : (
+              <User className="w-5 h-5 text-slate-400" />
+            )}
+          </div>
+          <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 px-2.5 py-1.5 bg-dark-primary border border-white/10 text-[10px] text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-2xl tracking-wider uppercase font-bold">
+            Compte
           </span>
         </button>
       </div>

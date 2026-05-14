@@ -3,6 +3,7 @@ import { LayoutGrid, Heart, Clock, Trash2, FolderOpen, ChevronRight, Plus, X, Lo
 import { motion, AnimatePresence } from 'motion/react';
 import { useTranslation } from '../context/LanguageContext';
 import { useAlbums } from '../hooks/useAlbums';
+import { useGallery } from '../hooks/useGallery';
 import { createAlbum, deleteAlbum } from '../services/photoService';
 import { ConfirmModal } from './ConfirmModal';
 
@@ -13,6 +14,18 @@ export function Sidebar({ selectedAlbum, onSelectAlbum }: { selectedAlbum: strin
   const [newAlbumTitle, setNewAlbumTitle] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [albumToDelete, setAlbumToDelete] = useState<string | null>(null);
+
+  const { photos, loading: galleryLoading } = useGallery();
+
+  const calculateStorage = () => {
+    const bytes = photos.reduce((acc, photo) => acc + (photo.url?.length || 0), 0);
+    const mb = bytes / (1024 * 1024);
+    const limitMB = 50; 
+    const percentage = Math.min(100, (mb / limitMB) * 100);
+    return { percentage, formatted: mb.toFixed(1) };
+  };
+
+  const storage = calculateStorage();
 
   const handleAddAlbum = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -167,16 +180,18 @@ export function Sidebar({ selectedAlbum, onSelectAlbum }: { selectedAlbum: strin
         <div className="p-4 rounded-2xl bg-gradient-to-br from-white/5 to-white/10 border border-white/10 space-y-3">
           <div className="flex justify-between items-center text-[10px] text-white/60 font-bold uppercase tracking-wider">
             <span>Stockage</span>
-            <span>74%</span>
+            <span>{storage.percentage.toFixed(0)}%</span>
           </div>
           <div className="h-1 w-full bg-white/10 rounded-full overflow-hidden">
             <motion.div 
               initial={{ width: 0 }}
-              animate={{ width: '74%' }}
-              className="h-full bg-gradient-to-r from-accent-purple to-accent-blue"
+              animate={{ width: `${storage.percentage}%` }}
+              className={`h-full ${storage.percentage > 90 ? 'bg-red-500' : 'bg-gradient-to-r from-accent-purple to-accent-blue'}`}
             />
           </div>
-          <p className="text-[10px] text-white/40 leading-relaxed">Libérez de l'espace pour vos moments magiques.</p>
+          <p className="text-[10px] text-white/40 leading-relaxed font-medium">
+            {storage.formatted} MB utilisés sur 50 MB
+          </p>
         </div>
       </div>
     </aside>

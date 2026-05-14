@@ -102,52 +102,62 @@ export function AccountSettingsModal({ isOpen, onClose }: AccountSettingsModalPr
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[120] flex items-start justify-end p-4 md:p-8 bg-dark-primary/95 backdrop-blur-xl overflow-y-auto"
+          className="fixed inset-0 z-[200] flex items-center justify-end p-4 md:p-10 bg-black/70 backdrop-blur-md"
           onClick={onClose}
         >
           <motion.div
-            initial={{ x: 100, opacity: 0 }}
+            initial={{ x: '100%', opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
-            exit={{ x: 100, opacity: 0 }}
-            className="w-full max-w-md glass-card p-6 md:p-8 relative mt-[350px] pt-[30px]"
+            exit={{ x: '100%', opacity: 0 }}
+            transition={{ type: 'spring', damping: 32, stiffness: 250 }}
+            className="w-full max-w-[650px] h-[92vh] bg-[#0F1F35] border border-white/10 shadow-[0_0_80px_rgba(0,0,0,0.8)] rounded-[2.5rem] overflow-hidden flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between mb-8">
-              <h2 className="text-2xl font-serif italic text-white tracking-wide">Paramètres du Compte</h2>
+            {/* Header - Fixed At Top */}
+            <div className="p-8 md:p-10 pb-8 bg-[#162744] border-b border-white/5 flex items-center justify-between shrink-0 z-30">
+              <div className="space-y-2">
+                <h2 className="text-4xl font-serif italic text-white tracking-tight uppercase">Paramètres</h2>
+                <div className="h-1 w-20 bg-gradient-to-r from-accent-purple to-accent-blue rounded-full" />
+              </div>
               <button 
-                onClick={onClose} 
-                className="p-2 hover:bg-white/10 rounded-full text-slate-400 transition-all"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onClose();
+                }}
+                className="p-4 hover:bg-white/10 rounded-2xl text-slate-400 hover:text-white transition-all border border-white/10 group shadow-lg"
               >
-                <X className="w-5 h-5" />
+                <X className="w-8 h-8 group-hover:rotate-90 transition-transform duration-300" />
               </button>
             </div>
 
-            <div className="flex flex-col items-center gap-8">
-              {/* Profile Picture */}
-              <div className="relative group">
-                <div className="w-32 h-32 rounded-full overflow-hidden border-2 border-white/10 glass-card p-1 shadow-2xl shadow-purple-500/10">
-                  {photoURL ? (
-                    <img src={photoURL} alt="Profile" className="w-full h-full object-cover rounded-full" />
-                  ) : (
-                    <div className="w-full h-full bg-white/5 flex items-center justify-center rounded-full">
-                      <User className="w-12 h-12 text-slate-500" />
-                    </div>
-                  )}
+            {/* Content - Scrollable Body */}
+            <div className="flex-1 overflow-y-auto p-8 md:p-12 custom-scrollbar">
+              <div className="flex flex-col items-center gap-12">
+                {/* Profile Picture Section */}
+                <div className="relative group">
+                  <div className="w-40 h-40 rounded-full overflow-hidden border-4 border-white/10 glass-card p-1 shadow-2xl shadow-purple-500/20 ring-4 ring-accent-purple/20">
+                    {photoURL ? (
+                      <img src={photoURL} alt="Profile" className="w-full h-full object-cover rounded-full" />
+                    ) : (
+                      <div className="w-full h-full bg-white/5 flex items-center justify-center rounded-full">
+                        <User className="w-16 h-16 text-slate-500" />
+                      </div>
+                    )}
+                  </div>
+                  <button 
+                    onClick={() => fileInputRef.current?.click()}
+                    className="absolute bottom-1 right-1 p-3.5 bg-accent-purple text-white rounded-2xl shadow-2xl hover:scale-110 active:scale-95 transition-all z-20 border-2 border-[#162744]"
+                  >
+                    <Camera className="w-5 h-5" />
+                  </button>
+                  <input 
+                    ref={fileInputRef}
+                    type="file" 
+                    accept="image/*" 
+                    hidden 
+                    onChange={handleImageChange}
+                  />
                 </div>
-                <button 
-                  onClick={() => fileInputRef.current?.click()}
-                  className="absolute bottom-0 right-0 p-2.5 bg-accent-purple text-white rounded-full shadow-lg hover:scale-110 active:scale-95 transition-all"
-                >
-                  <Camera className="w-4 h-4" />
-                </button>
-                <input 
-                  ref={fileInputRef}
-                  type="file" 
-                  accept="image/*" 
-                  hidden 
-                  onChange={handleImageChange}
-                />
-              </div>
 
               <div className="w-full space-y-6">
                 <div className="space-y-2">
@@ -170,59 +180,63 @@ export function AccountSettingsModal({ isOpen, onClose }: AccountSettingsModalPr
                     className="w-full h-12 px-4 bg-white/3 border border-white/10 rounded-xl text-slate-500 cursor-not-allowed"
                   />
                 </div>
-
-                {/* Storage Usage */}
-                <div className="p-4 bg-white/5 border border-white/10 rounded-xl space-y-3 shadow-inner">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <HardDrive className="w-4 h-4 text-accent-purple" />
-                      <span className="text-xs font-medium text-white/60">Stockage Archive</span>
+                  {/* Storage Usage Section */}
+                  <div className="p-6 bg-gradient-to-br from-white/5 to-transparent border border-white/10 rounded-3xl space-y-5 shadow-2xl">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-accent-purple/10 rounded-lg">
+                          <HardDrive className="w-5 h-5 text-accent-purple" />
+                        </div>
+                        <div>
+                          <span className="block text-sm font-bold text-white tracking-wide">Espace Utilisé</span>
+                          <span className="text-[10px] text-white/30 uppercase tracking-widest">{storage.formatted} de {storage.limit} MB</span>
+                        </div>
+                      </div>
+                      <span className="text-2xl font-serif italic text-white/60">{storage.percentage.toFixed(0)}%</span>
                     </div>
-                    <span className="text-[10px] font-bold text-white/40">{storage.formatted} / {storage.limit} MB</span>
+                    
+                    <div className="h-2.5 w-full bg-white/5 rounded-full overflow-hidden p-0.5 border border-white/5">
+                      <motion.div 
+                        initial={{ width: 0 }}
+                        animate={{ width: `${storage.percentage}%` }}
+                        className={`h-full rounded-full transition-all duration-1000 ${
+                          storage.percentage > 90 ? 'bg-gradient-to-r from-red-500 to-red-600 shadow-[0_0_20px_rgba(239,68,68,0.4)]' : 
+                          storage.percentage > 70 ? 'bg-gradient-to-r from-amber-500 to-amber-600' : 'bg-gradient-to-r from-accent-purple to-accent-blue shadow-[0_0_20px_rgba(168,85,247,0.4)]'
+                        }`}
+                      />
+                    </div>
                   </div>
-                  <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
-                    <motion.div 
-                      initial={{ width: 0 }}
-                      animate={{ width: `${storage.percentage}%` }}
-                      className={`h-full transition-all duration-1000 ${
-                        storage.percentage > 90 ? 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]' : 
-                        storage.percentage > 70 ? 'bg-amber-500' : 'bg-accent-purple shadow-[0_0_10px_rgba(168,85,247,0.5)]'
-                      }`}
-                    />
-                  </div>
-                  <p className="text-[9px] text-white/30 italic">
-                    {storage.percentage > 90 ? "Espace presque saturé" : "Voter archive est optimisée"}
-                  </p>
-                </div>
 
-                <div className="flex gap-3 pt-4">
-                  <button 
-                    onClick={handleLogout}
-                    className="flex-1 h-12 bg-white/5 border border-white/10 text-white rounded-xl hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/30 transition-all flex items-center justify-center gap-2 group"
-                  >
-                    <LogOut className="w-4 h-4" />
-                    <span>Déconnexion</span>
-                  </button>
-                  <button 
-                    onClick={handleSave}
-                    disabled={loading}
-                    className="flex-1 h-12 bg-accent-purple text-white rounded-xl shadow-lg shadow-purple-500/20 hover:bg-accent-purple/90 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-                  >
-                    {loading ? (
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                    ) : success ? (
-                      <Check className="w-5 h-5" />
-                    ) : (
-                      'Sauvegarder'
-                    )}
-                  </button>
+                  {/* Action Buttons */}
+                  <div className="flex flex-col sm:flex-row gap-4 pt-4">
+                    <button 
+                      onClick={handleLogout}
+                      className="flex-1 h-16 bg-white/5 border border-white/10 text-white rounded-2xl hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/30 transition-all flex items-center justify-center gap-3 group font-bold tracking-wide uppercase text-xs"
+                    >
+                      <LogOut className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+                      <span>Déconnexion</span>
+                    </button>
+                    <button 
+                      onClick={handleSave}
+                      disabled={loading}
+                      className="flex-[1.5] h-16 bg-accent-purple text-white rounded-2xl shadow-2xl shadow-purple-500/30 hover:bg-accent-purple/90 transition-all flex items-center justify-center gap-3 disabled:opacity-50 font-bold tracking-widest uppercase text-xs"
+                    >
+                      {loading ? (
+                        <Loader2 className="w-6 h-6 animate-spin" />
+                      ) : success ? (
+                        <Check className="w-6 h-6" />
+                      ) : (
+                        'Enregistrer les modifications'
+                      )}
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* Decorative background accent */}
-            <div className="absolute -top-24 -right-24 w-48 h-48 bg-accent-purple/10 blur-[100px] rounded-full" />
-            <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-accent-blue/10 blur-[100px] rounded-full" />
+            <div className="absolute top-0 right-0 w-96 h-96 bg-accent-purple/5 blur-[120px] rounded-full pointer-events-none -translate-y-1/2 translate-x-1/2" />
+            <div className="absolute bottom-0 left-0 w-96 h-96 bg-accent-blue/5 blur-[120px] rounded-full pointer-events-none translate-y-1/2 -translate-x-1/2" />
           </motion.div>
         </motion.div>
       )}
