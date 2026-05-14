@@ -1,11 +1,12 @@
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, User, Camera, LogOut, Check, Loader2 } from 'lucide-react';
+import { X, User, Camera, LogOut, Check, Loader2, HardDrive } from 'lucide-react';
 import { auth, db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { updateProfile, signOut } from 'firebase/auth';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { doc, setDoc } from 'firebase/firestore';
 import { compressImage } from '../lib/imageCompression';
 import { useTranslation } from '../context/LanguageContext';
+import { useGallery } from '../hooks/useGallery';
 
 interface AccountSettingsModalProps {
   isOpen: boolean;
@@ -15,11 +16,28 @@ interface AccountSettingsModalProps {
 export function AccountSettingsModal({ isOpen, onClose }: AccountSettingsModalProps) {
   const { t } = useTranslation();
   const user = auth.currentUser;
+  const { photos } = useGallery();
   const [displayName, setDisplayName] = useState(user?.displayName || '');
   const [photoURL, setPhotoURL] = useState(user?.photoURL || '');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const calculateStorage = () => {
+    const bytes = photos.reduce((acc, photo) => acc + (photo.url?.length || 0), 0);
+    const mb = bytes / (1024 * 1024);
+    // Adjusted limit for demo: 50MB
+    const limitMB = 50; 
+    const percentage = Math.min(100, (mb / limitMB) * 100);
+    return { 
+      used: mb.toFixed(1), 
+      limit: limitMB, 
+      percentage,
+      formatted: mb >= 1 ? `${mb.toFixed(1)} MB` : `${(bytes / 1024).toFixed(0)} KB`
+    };
+  };
+
+  const storage = calculateStorage();
 
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -84,13 +102,15 @@ export function AccountSettingsModal({ isOpen, onClose }: AccountSettingsModalPr
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-dark-primary/60 backdrop-blur-sm"
+          className="fixed inset-0 z-[120] flex items-start justify-end p-4 md:p-8 bg-dark-primary/95 backdrop-blur-xl overflow-y-auto"
+          onClick={onClose}
         >
           <motion.div
-            initial={{ scale: 0.95, opacity: 0, y: 20 }}
-            animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.9, opacity: 0, y: 20 }}
-            className="w-full max-w-md glass-card p-8 relative overflow-hidden"
+            initial={{ x: 100, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: 100, opacity: 0 }}
+            className="w-full max-w-md glass-card p-6 md:p-8 relative mt-[350px] pt-[30px]"
+            onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-8">
               <h2 className="text-2xl font-serif italic text-white tracking-wide">Paramètres du Compte</h2>
@@ -149,6 +169,30 @@ export function AccountSettingsModal({ isOpen, onClose }: AccountSettingsModalPr
                     disabled
                     className="w-full h-12 px-4 bg-white/3 border border-white/10 rounded-xl text-slate-500 cursor-not-allowed"
                   />
+                </div>
+
+                {/* Storage Usage */}
+                <div className="p-4 bg-white/5 border border-white/10 rounded-xl space-y-3 shadow-inner">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <HardDrive className="w-4 h-4 text-accent-purple" />
+                      <span className="text-xs font-medium text-white/60">Stockage Archive</span>
+                    </div>
+                    <span className="text-[10px] font-bold text-white/40">{storage.formatted} / {storage.limit} MB</span>
+                  </div>
+                  <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                    <motion.div 
+                      initial={{ width: 0 }}
+                      animate={{ width: `${storage.percentage}%` }}
+                      className={`h-full transition-all duration-1000 ${
+                        storage.percentage > 90 ? 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]' : 
+                        storage.percentage > 70 ? 'bg-amber-500' : 'bg-accent-purple shadow-[0_0_10px_rgba(168,85,247,0.5)]'
+                      }`}
+                    />
+                  </div>
+                  <p className="text-[9px] text-white/30 italic">
+                    {storage.percentage > 90 ? "Espace presque saturé" : "Voter archive est optimisée"}
+                  </p>
                 </div>
 
                 <div className="flex gap-3 pt-4">

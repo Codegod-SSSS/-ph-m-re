@@ -141,13 +141,13 @@ export function UploadModal({ isOpen, onClose }: { isOpen: boolean, onClose: () 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-dark-primary/60 backdrop-blur-sm"
+          className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-dark-primary/95 backdrop-blur-md"
         >
           <motion.div
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.9, opacity: 0 }}
-            className="w-full max-w-lg glass-card p-8 relative"
+            className="w-full max-w-lg glass-card p-8 relative max-h-[90vh] overflow-y-auto custom-scrollbar"
           >
             <button onClick={onClose} className="absolute top-4 right-4 p-2 text-slate-400 hover:text-white transition-colors">
               <X className="w-5 h-5" />

@@ -1,5 +1,28 @@
-import { doc, updateDoc, deleteDoc } from 'firebase/firestore';
-import { db, handleFirestoreError, OperationType } from '../lib/firebase';
+import { doc, updateDoc, deleteDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { db, handleFirestoreError, OperationType, auth } from '../lib/firebase';
+
+export async function createAlbum(title: string, description: string = '') {
+  if (!auth.currentUser) throw new Error("Authentication required");
+  try {
+    const docRef = await addDoc(collection(db, 'albums'), {
+      title,
+      description,
+      ownerId: auth.currentUser.uid,
+      createdAt: serverTimestamp()
+    });
+    return docRef.id;
+  } catch (error) {
+    handleFirestoreError(error, OperationType.CREATE, 'albums');
+  }
+}
+
+export async function deleteAlbum(albumId: string) {
+  try {
+    await deleteDoc(doc(db, 'albums', albumId));
+  } catch (error) {
+    handleFirestoreError(error, OperationType.DELETE, `albums/${albumId}`);
+  }
+}
 
 export async function toggleFavorite(photoId: string, currentState: boolean) {
   try {
