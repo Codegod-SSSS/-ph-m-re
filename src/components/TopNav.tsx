@@ -6,7 +6,7 @@ import { Language } from '../lib/translations';
 import { AccountSettingsModal } from './AccountSettingsModal';
 import { auth } from '../lib/firebase';
 
-export function TopNav({ onUploadClick, onSearch }: { onUploadClick: () => void, onSearch: (query: string) => void }) {
+export function TopNav({ onUploadClick, onSearch, onToggleSidebar }: { onUploadClick: () => void, onSearch: (query: string) => void, onToggleSidebar: () => void }) {
   const { t, language, setLanguage } = useTranslation();
   const [isLangOpen, setIsLangOpen] = useState(false);
   const [isAccountOpen, setIsAccountOpen] = useState(false);
@@ -30,16 +30,21 @@ export function TopNav({ onUploadClick, onSearch }: { onUploadClick: () => void,
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 h-20 px-6 flex items-center justify-between glass border-b border-white/5">
       <div className="flex items-center gap-3">
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center shadow-lg"
+        <button 
+          onClick={onToggleSidebar}
+          className="group flex items-center gap-3 active:scale-95 transition-transform"
         >
-          <span className="font-serif italic text-white text-lg">É</span>
-        </motion.div>
-        <div className="text-lg font-serif italic tracking-[0.1em] text-white">
-          ÉPHÉMÈRE
-        </div>
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center shadow-lg group-hover:bg-white/10 group-hover:border-white/20 transition-all pointer-events-none"
+          >
+            <span className="font-serif italic text-white text-lg">É</span>
+          </motion.div>
+          <div className="text-lg font-serif italic tracking-[0.1em] text-white group-hover:text-accent-blue transition-colors">
+            ÉPHÉMÈRE
+          </div>
+        </button>
       </div>
 
       <div className="flex-1 max-w-xl mx-8 hidden md:block">
@@ -76,7 +81,7 @@ export function TopNav({ onUploadClick, onSearch }: { onUploadClick: () => void,
             <Globe className="w-3 h-3 text-white/60" />
           </button>
           <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-dark-primary border border-white/10 text-[10px] text-white rounded opacity-0 group-hover/lang:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-            Language
+            {t.languageLabel}
           </span>
 
           <AnimatePresence>
@@ -121,7 +126,7 @@ export function TopNav({ onUploadClick, onSearch }: { onUploadClick: () => void,
             )}
           </div>
           <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 px-2.5 py-1.5 bg-dark-primary border border-white/10 text-[10px] text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-2xl tracking-wider uppercase font-bold">
-            Compte
+            {t.account}
           </span>
         </button>
       </div>

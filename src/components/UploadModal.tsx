@@ -103,6 +103,9 @@ export function UploadModal({ isOpen, onClose }: { isOpen: boolean, onClose: () 
 
         // 3. Firestore Add
         try {
+          const base64Data = url.includes(',') ? url.split(',')[1] : url;
+          const sizeInBytes = Math.round((base64Data.length * 3) / 4);
+          
           await addDoc(collection(db, 'photos'), {
             url,
             userId: auth.currentUser?.uid,
@@ -112,7 +115,8 @@ export function UploadModal({ isOpen, onClose }: { isOpen: boolean, onClose: () 
             description: '',
             frameStyle: 'none',
             isFavorite: false,
-            tags: tags
+            tags: tags,
+            size: sizeInBytes
           });
           setProgress(prev => ({ ...prev, [file.name]: 100 }));
         } catch (error) {

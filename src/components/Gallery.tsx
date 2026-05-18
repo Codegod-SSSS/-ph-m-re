@@ -12,6 +12,7 @@ export interface Photo {
   isFavorite?: boolean;
   frameStyle?: string;
   tags?: string[];
+  size?: number;
 }
 
 const frameStyles: Record<string, string> = {

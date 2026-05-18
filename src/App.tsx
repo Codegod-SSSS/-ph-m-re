@@ -19,10 +19,11 @@ import { useGallery } from './hooks/useGallery';
 import { useAlbums } from './hooks/useAlbums';
 
 function AppContent() {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const [user, setUser] = useState<User | null>(null);
   const [authReady, setAuthReady] = useState(false);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { albums, loading: albumsLoading } = useAlbums();
   const [selectedAlbum, setSelectedAlbum] = useState<string | null>(null);
   const [activePhoto, setActivePhoto] = useState<Photo | null>(null);
@@ -85,7 +86,7 @@ function AppContent() {
         >
           <div className="space-y-4">
             <h1 className="text-6xl font-serif italic font-light text-white tracking-[0.3em]">ÉPHÉMÈRE</h1>
-            <p className="text-slate-400 font-light uppercase tracking-widest text-xs">Digital Arts Archive</p>
+            <p className="text-slate-400 font-light uppercase tracking-widest text-xs">{t.digitalArchive}</p>
           </div>
           
           <button 
@@ -93,10 +94,10 @@ function AppContent() {
             className="w-full h-14 bg-white text-dark-primary font-bold rounded-2xl flex items-center justify-center gap-3 hover:bg-slate-200 transition-all active:scale-95"
           >
             <LogIn className="w-5 h-5" />
-            Connect with Google
+            {t.connectGoogle}
           </button>
           
-          <p className="text-xs text-slate-500 uppercase tracking-widest">Sign in to start your magical collection</p>
+          <p className="text-xs text-slate-500 uppercase tracking-widest">{t.signInMotto}</p>
         </motion.div>
       </div>
     );
@@ -108,10 +109,19 @@ function AppContent() {
   return (
     <div className="min-h-screen bg-dark-primary">
       <Background />
-      <TopNav onUploadClick={() => setIsUploadOpen(true)} onSearch={setSearchQuery} />
+      <TopNav 
+        onUploadClick={() => setIsUploadOpen(true)} 
+        onSearch={setSearchQuery} 
+        onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+      />
       
-      <div className="pt-20 lg:pl-64 flex flex-col min-h-screen">
-        <Sidebar selectedAlbum={selectedAlbum} onSelectAlbum={setSelectedAlbum} />
+      <div className={`pt-20 transition-all duration-500 ${isSidebarOpen ? 'lg:pl-64' : 'pl-0'} flex flex-col min-h-screen`}>
+        <Sidebar 
+          isOpen={isSidebarOpen} 
+          onClose={() => setIsSidebarOpen(false)} 
+          selectedAlbum={selectedAlbum} 
+          onSelectAlbum={setSelectedAlbum} 
+        />
         
         <main className="flex-1 p-6 md:p-12">
           {/* Hero Banner Section */}
@@ -137,7 +147,7 @@ function AppContent() {
               >
                 <div className="flex items-center justify-center gap-4">
                   <div className="w-8 h-px bg-white/20" />
-                  <span className="text-[10px] md:text-xs text-white/40 font-bold uppercase tracking-[0.6em] whitespace-nowrap">GALERIE D'ART NUMÉRIQUE</span>
+                  <span className="text-[10px] md:text-xs text-white/40 font-bold uppercase tracking-[0.6em] whitespace-nowrap">{t.galleryTagline}</span>
                   <div className="w-8 h-px bg-white/20" />
                 </div>
               </motion.div>
@@ -147,9 +157,9 @@ function AppContent() {
           <header className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div className="space-y-1">
               <h1 className="text-4xl md:text-5xl font-light italic serif text-white">
-                {selectedAlbum === 'favorites' ? t.favorites : (selectedAlbum === null ? (user?.displayName ? `Les Archives de ${user.displayName.split(' ')[0]}` : "Vos Moments Enchantés") : (albums.find(a => a.id === selectedAlbum)?.title || selectedAlbum))}
+                {selectedAlbum === 'favorites' ? t.favorites : (selectedAlbum === null ? (user?.displayName ? (language === 'ko' ? `${user.displayName.split(' ')[0]}${t.userArchives}` : `${t.userArchives} ${user.displayName.split(' ')[0]}`) : t.defaultAlbumTitle) : (albums.find(a => a.id === selectedAlbum)?.title || selectedAlbum))}
               </h1>
-              <p className="text-white/40 text-sm font-medium">Capturez la magie du temps</p>
+              <p className="text-white/40 text-sm font-medium">{t.heroSubtitle}</p>
             </div>
             
             <div className="flex gap-2">
@@ -159,7 +169,7 @@ function AppContent() {
                 id="header-upload-btn"
               >
                 <PlusCircle className="w-4 h-4 group-hover:rotate-90 transition-transform duration-300" />
-                <span>Upload Masterpiece</span>
+                <span>{t.uploadMasterpiece}</span>
               </button>
             </div>
           </header>

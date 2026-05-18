@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, User, Camera, LogOut, Check, Loader2, HardDrive } from 'lucide-react';
 import { auth, db, handleFirestoreError, OperationType } from '../lib/firebase';
@@ -23,21 +23,38 @@ export function AccountSettingsModal({ isOpen, onClose }: AccountSettingsModalPr
   const [success, setSuccess] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const calculateStorage = () => {
-    const bytes = photos.reduce((acc, photo) => acc + (photo.url?.length || 0), 0);
-    const mb = bytes / (1024 * 1024);
-    // Adjusted limit for demo: 50MB
+  const storage = useMemo(() => {
+    if (!photos || photos.length === 0) {
+      return { 
+        used: '0.0', 
+        remaining: '50.0', 
+        limit: 50, 
+        percentage: 0,
+        formattedUsed: '0 KB',
+        formattedRemaining: '50.0 MB'
+      };
+    }
+
+    const totalBytes = photos.reduce((acc, photo) => {
+      // Prioritize stored size, then estimate from data URL length
+      const photoSize = photo.size || (photo.url?.length ? Math.round((photo.url.length * 3) / 4 * 0.75) : 0);
+      return acc + photoSize;
+    }, 0);
+
+    const mb = totalBytes / (1024 * 1024);
     const limitMB = 50; 
     const percentage = Math.min(100, (mb / limitMB) * 100);
+    const remainingMB = Math.max(0, limitMB - mb);
+    
     return { 
-      used: mb.toFixed(1), 
+      used: mb.toFixed(2), 
+      remaining: remainingMB.toFixed(2),
       limit: limitMB, 
       percentage,
-      formatted: mb >= 1 ? `${mb.toFixed(1)} MB` : `${(bytes / 1024).toFixed(0)} KB`
+      formattedUsed: mb >= 1 ? `${mb.toFixed(1)} MB` : `${(totalBytes / 1024).toFixed(0)} KB`,
+      formattedRemaining: remainingMB >= 1 ? `${remainingMB.toFixed(1)} MB` : `${(remainingMB * 1024).toFixed(0)} KB`
     };
-  };
-
-  const storage = calculateStorage();
+  }, [photos]);
 
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -116,7 +133,7 @@ export function AccountSettingsModal({ isOpen, onClose }: AccountSettingsModalPr
             {/* Header - Fixed At Top */}
             <div className="p-8 md:p-10 pb-8 bg-[#162744] border-b border-white/5 flex items-center justify-between shrink-0 z-30">
               <div className="space-y-2">
-                <h2 className="text-4xl font-serif italic text-white tracking-tight uppercase">Paramètres</h2>
+                <h2 className="text-4xl font-serif italic text-white tracking-tight uppercase">{t.settings}</h2>
                 <div className="h-1 w-20 bg-gradient-to-r from-accent-purple to-accent-blue rounded-full" />
               </div>
               <button 
@@ -132,102 +149,83 @@ export function AccountSettingsModal({ isOpen, onClose }: AccountSettingsModalPr
 
             {/* Content - Scrollable Body */}
             <div className="flex-1 overflow-y-auto p-8 md:p-12 custom-scrollbar">
-              <div className="flex flex-col items-center gap-12">
+              <div className="flex flex-col items-center gap-10">
                 {/* Profile Picture Section */}
-                <div className="relative group">
-                  <div className="w-40 h-40 rounded-full overflow-hidden border-4 border-white/10 glass-card p-1 shadow-2xl shadow-purple-500/20 ring-4 ring-accent-purple/20">
+                <div className="relative">
+                  <div className="w-44 h-44 rounded-full overflow-hidden border-4 border-white/10 glass-card p-1 shadow-[0_0_50px_rgba(168,85,247,0.2)] ring-8 ring-accent-purple/5">
                     {photoURL ? (
                       <img src={photoURL} alt="Profile" className="w-full h-full object-cover rounded-full" />
                     ) : (
-                      <div className="w-full h-full bg-white/5 flex items-center justify-center rounded-full">
-                        <User className="w-16 h-16 text-slate-500" />
+                      <div className="w-full h-full bg-[#162744] flex items-center justify-center rounded-full">
+                        <User className="w-20 h-20 text-slate-500/50" />
                       </div>
                     )}
                   </div>
-                  <button 
-                    onClick={() => fileInputRef.current?.click()}
-                    className="absolute bottom-1 right-1 p-3.5 bg-accent-purple text-white rounded-2xl shadow-2xl hover:scale-110 active:scale-95 transition-all z-20 border-2 border-[#162744]"
-                  >
-                    <Camera className="w-5 h-5" />
-                  </button>
-                  <input 
-                    ref={fileInputRef}
-                    type="file" 
-                    accept="image/*" 
-                    hidden 
-                    onChange={handleImageChange}
-                  />
                 </div>
 
-              <div className="w-full space-y-6">
-                <div className="space-y-2">
-                  <label className="text-[10px] uppercase tracking-[0.2em] text-white/40 font-bold ml-1">Nom d'affichage</label>
-                  <input 
-                    type="text" 
-                    value={displayName}
-                    onChange={(e) => setDisplayName(e.target.value)}
-                    className="w-full h-12 px-4 bg-white/5 border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-accent-purple/50 focus:border-accent-purple/50 transition-all text-white"
-                    placeholder="Votre nom"
-                  />
+                {/* User Info Section */}
+                <div className="w-full text-center space-y-2">
+                  <h3 className="text-4xl font-serif italic text-white tracking-tight">{displayName || 'Utilisateur'}</h3>
+                  <div className="flex items-center justify-center gap-2 text-white/40 text-sm font-medium">
+                    <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                    <span>{t.activeSince} {user?.metadata.creationTime ? new Date(user.metadata.creationTime).toLocaleDateString(t.title === 'Galerie Lumina' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'long', year: 'numeric' }) : t.recently}</span>
+                  </div>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-[10px] uppercase tracking-[0.2em] text-white/40 font-bold ml-1">Email</label>
-                  <input 
-                    type="text" 
-                    value={user?.email || ''}
-                    disabled
-                    className="w-full h-12 px-4 bg-white/3 border border-white/10 rounded-xl text-slate-500 cursor-not-allowed"
-                  />
-                </div>
+                <div className="w-full h-px bg-white/5" />
+
+                <div className="w-full space-y-8">
                   {/* Storage Usage Section */}
-                  <div className="p-6 bg-gradient-to-br from-white/5 to-transparent border border-white/10 rounded-3xl space-y-5 shadow-2xl">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-accent-purple/10 rounded-lg">
-                          <HardDrive className="w-5 h-5 text-accent-purple" />
-                        </div>
-                        <div>
-                          <span className="block text-sm font-bold text-white tracking-wide">Espace Utilisé</span>
-                          <span className="text-[10px] text-white/30 uppercase tracking-widest">{storage.formatted} de {storage.limit} MB</span>
-                        </div>
-                      </div>
-                      <span className="text-2xl font-serif italic text-white/60">{storage.percentage.toFixed(0)}%</span>
+                  <div className="p-8 bg-gradient-to-br from-white/5 to-transparent border border-white/10 rounded-[2rem] space-y-6 shadow-2xl relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
+                      <HardDrive className="w-24 h-24 text-accent-purple" />
                     </div>
                     
-                    <div className="h-2.5 w-full bg-white/5 rounded-full overflow-hidden p-0.5 border border-white/5">
-                      <motion.div 
-                        initial={{ width: 0 }}
-                        animate={{ width: `${storage.percentage}%` }}
-                        className={`h-full rounded-full transition-all duration-1000 ${
-                          storage.percentage > 90 ? 'bg-gradient-to-r from-red-500 to-red-600 shadow-[0_0_20px_rgba(239,68,68,0.4)]' : 
-                          storage.percentage > 70 ? 'bg-gradient-to-r from-amber-500 to-amber-600' : 'bg-gradient-to-r from-accent-purple to-accent-blue shadow-[0_0_20px_rgba(168,85,247,0.4)]'
-                        }`}
-                      />
+                    <div className="relative z-10 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <span className="block text-[10px] text-white/30 uppercase tracking-[0.3em] font-bold mb-1">{t.storageRemaining}</span>
+                          <span className="text-2xl font-serif italic text-white">{storage.formattedRemaining} <span className="text-white/30 text-lg">{t.free}</span></span>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-[10px] text-white/30 uppercase tracking-[0.1em] block mb-1">{t.used}</span>
+                          <motion.span 
+                            key={storage.percentage}
+                            initial={{ opacity: 0.5, y: 5 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="text-2xl font-serif italic text-accent-purple block"
+                          >
+                            {storage.percentage < 0.1 && storage.percentage > 0 
+                              ? storage.percentage.toFixed(2) 
+                              : storage.percentage.toFixed(1)}%
+                          </motion.span>
+                        </div>
+                      </div>
+                      
+                      <div className="h-3 w-full bg-white/5 rounded-full overflow-hidden p-0.5 border border-white/5">
+                        <motion.div 
+                          initial={{ width: 0 }}
+                          animate={{ width: `${storage.percentage}%` }}
+                          className={`h-full rounded-full transition-all duration-1000 ${
+                            storage.percentage > 90 ? 'bg-gradient-to-r from-red-500 to-red-600 shadow-[0_0_20px_rgba(239,68,68,0.4)]' : 
+                            storage.percentage > 70 ? 'bg-gradient-to-r from-amber-500 to-amber-600' : 'bg-gradient-to-r from-accent-purple to-accent-blue shadow-[0_0_20px_rgba(168,85,247,0.4)]'
+                          }`}
+                        />
+                      </div>
+                      <p className="text-[10px] text-white/30 text-center italic tracking-wider">
+                        {storage.percentage > 90 ? t.storageWarning : t.storageOptimized}
+                      </p>
                     </div>
                   </div>
 
                   {/* Action Buttons */}
-                  <div className="flex flex-col sm:flex-row gap-4 pt-4">
+                  <div className="flex flex-col gap-4 pt-6">
                     <button 
                       onClick={handleLogout}
-                      className="flex-1 h-16 bg-white/5 border border-white/10 text-white rounded-2xl hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/30 transition-all flex items-center justify-center gap-3 group font-bold tracking-wide uppercase text-xs"
+                      className="w-full h-16 bg-white/5 border border-white/10 text-white/60 rounded-2xl hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/30 transition-all flex items-center justify-center gap-3 group font-bold tracking-widest uppercase text-[10px]"
                     >
                       <LogOut className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-                      <span>Déconnexion</span>
-                    </button>
-                    <button 
-                      onClick={handleSave}
-                      disabled={loading}
-                      className="flex-[1.5] h-16 bg-accent-purple text-white rounded-2xl shadow-2xl shadow-purple-500/30 hover:bg-accent-purple/90 transition-all flex items-center justify-center gap-3 disabled:opacity-50 font-bold tracking-widest uppercase text-xs"
-                    >
-                      {loading ? (
-                        <Loader2 className="w-6 h-6 animate-spin" />
-                      ) : success ? (
-                        <Check className="w-6 h-6" />
-                      ) : (
-                        'Enregistrer les modifications'
-                      )}
+                      <span>{t.logoutSession}</span>
                     </button>
                   </div>
                 </div>
